@@ -63,7 +63,7 @@ def calculate_momentum(price_df: pd.DataFrame, periods: list) -> pd.DataFrame:
     Returns:
     --------
     pd.DataFrame
-        평균 모멘텀 (누적수익률 %, 컬럼=자산)
+        기간별 모멘텀을 평균한 결과 (누적수익률 %, 행=날짜, 열=자산)
     """
     momentum_sum = None
 
@@ -97,6 +97,6 @@ def cs_minmax(df: pd.DataFrame) -> pd.DataFrame:
 
     mn = clipped.min(axis=1)
     mx = clipped.max(axis=1)
-    denom = (mx - mn).replace(0, np.nan)  # 분모가 0이면 중립값(0) 처리
+    denom = (mx - mn).replace(0, np.nan)  # 분모 0(단면 분산 없음)은 NaN 처리 후 fillna(0)으로 [-1,1] 중간값(중립) 설정
     scaled = clipped.sub(mn, axis=0).div(denom, axis=0)
     return (scaled * 2 - 1).fillna(0)

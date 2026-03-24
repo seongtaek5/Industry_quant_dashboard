@@ -68,7 +68,7 @@ pbr_zscore = rolling_zscore_df(pbr_monthly, rolling_window)
 pbr_cs_score = cs_minmax(pbr_zscore)
 
 # 모멘텀 계산
-momentum_df = calculate_momentum(etf_monthly, momentum_periods_int)
+momentum_df = create_industry_momentum_map(calculate_momentum(etf_monthly, momentum_periods_int))
 momentum_zscore = rolling_zscore_df(momentum_df, rolling_window)
 momentum_cs_score = cs_minmax(momentum_zscore)
 
@@ -85,7 +85,7 @@ tab1, tab2, tab3 = st.tabs(["📊 Overview (Heatmap)", "🔵 Scatter Plot", "�
 
 # ========== TAB 1: Heatmap ==========
 with tab1:
-    st.subheader("최신기준 Cross-Sectional Min-Max Score (-1 ~ 1)")
+    st.subheader("최신 기준 Cross-Sectional Min-Max Score (-1 ~ 1)")
     
     col1, col2 = st.columns(2)
     
@@ -199,18 +199,17 @@ with tab3:
                           line=dict(color=color), showlegend=False),
                 row=1, col=2
             )
-        
-        fig_ts.add_trace(
-            go.Scatter(x=momentum_df.index, y=momentum_df[selected_industries[0]].values, name=f"{selected_industries[0]} Momentum",
-                      line=dict(color="purple", width=3)),
-            row=2, col=1
-        )
-        
-        fig_ts.add_trace(
-            go.Scatter(x=momentum_zscore.index, y=momentum_zscore[selected_industries[0]].values, name=f"{selected_industries[0]} Mom Z",
-                      line=dict(color="purple", width=3, dash="dash")),
-            row=2, col=2
-        )
+            fig_ts.add_trace(
+                go.Scatter(x=momentum_df.index, y=momentum_df[industry].values, name=f"{industry} Momentum",
+                          line=dict(color=color, width=3)),
+                row=2, col=1
+            )
+            
+            fig_ts.add_trace(
+                go.Scatter(x=momentum_zscore.index, y=momentum_zscore[industry].values, name=f"{industry} Mom Z",
+                          line=dict(color=color, width=3, dash="dash")),
+                row=2, col=2
+            )
         
         fig_ts.update_layout(height=800, hovermode="x unified")
         st.plotly_chart(fig_ts, use_container_width=True)
