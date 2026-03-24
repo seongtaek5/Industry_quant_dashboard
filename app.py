@@ -12,7 +12,7 @@ from plotly.subplots import make_subplots
 import warnings
 
 from data_loader import load_pbr_data, load_etf_data, align_and_resample, create_industry_momentum_map, ETF_INDUSTRY_MAP
-from indicators import rolling_zscore_df, calculate_momentum, cs_minmax, calculate_composite_score
+from indicators import rolling_zscore_df, calculate_momentum, cs_minmax
 
 warnings.filterwarnings("ignore")
 
@@ -68,13 +68,9 @@ pbr_zscore = rolling_zscore_df(pbr_monthly, rolling_window)
 pbr_cs_score = cs_minmax(pbr_zscore)
 
 # 모멘텀 계산
-momentum_series = calculate_momentum(etf_monthly, momentum_periods_int)["Momentum"]
-momentum_zscore = rolling_zscore_df(pd.DataFrame({"Momentum": momentum_series}), rolling_window)
-momentum_cs_score = cs_minmax(momentum_zscore)["Momentum"]
-
-# 종합 Score
-pbr_cs_mean = pbr_cs_score.mean(axis=1)
-composite_score = (-pbr_cs_mean + momentum_cs_score) / 2
+momentum_df = create_industry_momentum_map(calculate_momentum(etf_monthly, momentum_periods_int))
+momentum_zscore = rolling_zscore_df(momentum_df, rolling_window)
+momentum_cs_score = cs_minmax(momentum_zscore)
 
 # 기준 날짜
 try:
@@ -85,17 +81,17 @@ except:
 ref_date_ts = pbr_monthly.index[ref_idx]
 
 # ========== 탭 구성 ==========
-tab1, tab2, tab3, tab4 = st.tabs(["📊 Overview (Heatmap)", "🎯 Snapshot Ranking", "🔵 Scatter Plot", "📈 Time-Series"])
+tab1, tab2, tab3 = st.tabs(["📊 Overview (Heatmap)", "🔵 Scatter Plot", "📈 Time-Series"])
 
 # ========== TAB 1: Heatmap ==========
 with tab1:
-    st.subheader("PBR & Momentum Rolling Z-score (최근 %d개월)" % heatmap_months)
+    st.subheader("최신 기준 Cross-Sectional Min-Max Score (-1 ~ 1)")
     
     col1, col2 = st.columns(2)
     
     with col1:
-        st.write("**PBR Rolling Z-score**")
-        heatmap_data_pbr = pbr_zscore.iloc[-heatmap_months:, :]
+        st.write("**PBR CS Score**")
+        heatmap_data_pbr = pbr_cs_score.iloc[-heatmap_months:, :]
         fig_pbr = go.Figure(
             data=go.Heatmap(
                 z=heatmap_data_pbr.values,
@@ -113,16 +109,9 @@ with tab1:
         st.plotly_chart(fig_pbr, use_container_width=True)
     
     with col2:
-        st.write("**Momentum Rolling Z-score**")
-        heatmap_data_mom = momentum_zscore.iloc[-heatmap_months:, 0]
-        
-        # 산업별로 동일한 값 반복
-        heatmap_data_mom_expanded = pd.DataFrame(
-            np.tile(heatmap_data_mom.values.reshape(-1, 1), (1, len(pbr_monthly.columns))),
-            columns=pbr_monthly.columns,
-            index=heatmap_data_mom.index
-        )
-        
+        st.write("**Momentum CS Score**")
+        heatmap_data_mom_expanded = momentum_cs_score.iloc[-heatmap_months:, :]
+
         fig_mom = go.Figure(
             data=go.Heatmap(
                 z=heatmap_data_mom_expanded.values,
@@ -139,60 +128,14 @@ with tab1:
         fig_mom.update_layout(height=600, xaxis_tickangle=-45)
         st.plotly_chart(fig_mom, use_container_width=True)
 
-# ========== TAB 2: Snapshot Ranking ==========
+# ========== TAB 2: Scatter Plot ==========
 with tab2:
-    st.subheader(f"🎯 현재 스냅샷 ({ref_date_ts.strftime('%Y-%m-%d')})")
-    
-    snapshot_data = []
-    for industry in pbr_monthly.columns:
-        pbr_val = pbr_monthly.loc[ref_date_ts, industry]
-        pbr_z = pbr_zscore.loc[ref_date_ts, industry]
-        pbr_cs = pbr_cs_score.loc[ref_date_ts, industry]
-        
-        mom_val = momentum_series.loc[ref_date_ts]
-        mom_z = momentum_zscore.loc[ref_date_ts, "Momentum"]
-        mom_cs = momentum_cs_score.loc[ref_date_ts]
-        
-        comp_score = composite_score.loc[ref_date_ts]
-        
-        etf = ETF_INDUSTRY_MAP.get(industry, "-")
-        
-        snapshot_data.append({
-            "산업명": industry,
-            "ETF": etf,
-            "PBR": f"{pbr_val:.2f}",
-            "PBR Z": f"{pbr_z:.2f}",
-            "PBR CS": f"{pbr_cs:.2f}",
-            "Momentum (%)": f"{mom_val:.2f}",
-            "Mom Z": f"{mom_z:.2f}",
-            "Mom CS": f"{mom_cs:.2f}",
-            "종합 Score": f"{comp_score:.2f}",
-            "_sort_key": float(comp_score),
-        })
-    
-    snapshot_df = pd.DataFrame(snapshot_data)
-    snapshot_df = snapshot_df.sort_values("_sort_key", ascending=False).drop("_sort_key", axis=1)
-    
-    st.dataframe(snapshot_df, use_container_width=True, height=600)
-    
-    csv = snapshot_df.to_csv(index=False, encoding="utf-8-sig")
-    st.download_button(
-        label="📥 CSV 다운로드",
-        data=csv,
-        file_name=f"snapshot_{ref_date_ts.strftime('%Y%m%d')}.csv",
-        mime="text/csv"
-    )
-
-# ========== TAB 3: Scatter Plot ==========
-with tab3:
     st.subheader("🔵 Scatter Plot: PBR Z-score vs Momentum CS Score")
     
     scatter_data = []
     for industry in pbr_monthly.columns:
         pbr_z = pbr_zscore.loc[ref_date_ts, industry]
-        mom_cs = momentum_cs_score.loc[ref_date_ts]
-        comp = composite_score.loc[ref_date_ts]
-        
+        mom_cs = momentum_cs_score.loc[ref_date_ts, industry]
         etf = ETF_INDUSTRY_MAP.get(industry, "-")
         
         scatter_data.append({
@@ -200,7 +143,7 @@ with tab3:
             "ETF": etf,
             "PBR_Z": pbr_z,
             "Mom_CS": mom_cs,
-            "Composite": comp,
+            "PBR_CS": pbr_cs_score.loc[ref_date_ts, industry],
         })
     
     scatter_df = pd.DataFrame(scatter_data)
@@ -209,9 +152,9 @@ with tab3:
         scatter_df,
         x="PBR_Z",
         y="Mom_CS",
-        color="Composite",
+        color="PBR_CS",
         hover_name="Industry",
-        hover_data={"ETF": True, "PBR_Z": ":.2f", "Mom_CS": ":.2f", "Composite": ":.2f"},
+        hover_data={"ETF": True, "PBR_Z": ":.2f", "Mom_CS": ":.2f", "PBR_CS": ":.2f"},
         color_continuous_scale="RdYlGn",
         title="4사분면 분석: Sweet Spot vs Avoid Zones",
         labels={"PBR_Z": "PBR Z-score", "Mom_CS": "Momentum CS Score"},
@@ -223,8 +166,8 @@ with tab3:
     fig_scatter.update_layout(height=600, hovermode="closest")
     st.plotly_chart(fig_scatter, use_container_width=True)
 
-# ========== TAB 4: Time-Series ==========
-with tab4:
+# ========== TAB 3: Time-Series ==========
+with tab3:
     st.subheader("📈 시계열 분석")
     
     selected_industries = st.multiselect(
@@ -256,18 +199,17 @@ with tab4:
                           line=dict(color=color), showlegend=False),
                 row=1, col=2
             )
-        
-        fig_ts.add_trace(
-            go.Scatter(x=momentum_series.index, y=momentum_series.values, name="Momentum",
-                      line=dict(color="purple", width=3)),
-            row=2, col=1
-        )
-        
-        fig_ts.add_trace(
-            go.Scatter(x=momentum_zscore.index, y=momentum_zscore["Momentum"].values, name="Mom Z",
-                      line=dict(color="purple", width=3, dash="dash")),
-            row=2, col=2
-        )
+            fig_ts.add_trace(
+                go.Scatter(x=momentum_df.index, y=momentum_df[industry].values, name=f"{industry} Momentum",
+                          line=dict(color=color, width=3)),
+                row=2, col=1
+            )
+            
+            fig_ts.add_trace(
+                go.Scatter(x=momentum_zscore.index, y=momentum_zscore[industry].values, name=f"{industry} Mom Z",
+                          line=dict(color=color, width=3, dash="dash")),
+                row=2, col=2
+            )
         
         fig_ts.update_layout(height=800, hovermode="x unified")
         st.plotly_chart(fig_ts, use_container_width=True)

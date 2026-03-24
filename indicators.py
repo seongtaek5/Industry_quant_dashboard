@@ -63,19 +63,15 @@ def calculate_momentum(price_df: pd.DataFrame, periods: list) -> pd.DataFrame:
     Returns:
     --------
     pd.DataFrame
-        각 기간별 모멘텀 (누적수익률 %)
+        기간별 모멘텀을 평균한 결과 (누적수익률 %, 행=날짜, 열=자산)
     """
-    momentum_list = []
-    
+    momentum_sum = None
+
     for period in periods:
         mom = (price_df / price_df.shift(period) - 1) * 100
-        # 각 행의 평균 모멘텀
-        momentum_list.append(mom.mean(axis=1))
-    
-    # 평균 모멘텀
-    momentum_df = pd.DataFrame({"Momentum": pd.concat(momentum_list, axis=1).mean(axis=1)})
-    
-    return momentum_df
+        momentum_sum = mom if momentum_sum is None else momentum_sum.add(mom, fill_value=0)
+
+    return momentum_sum / len(periods)
 
 
 def cs_minmax(df: pd.DataFrame) -> pd.DataFrame:
@@ -94,29 +90,13 @@ def cs_minmax(df: pd.DataFrame) -> pd.DataFrame:
     pd.DataFrame
         정규화된 DataFrame (-1 ~ 1)
     """
-    mn = df.min(axis=1)
-    mx = df.max(axis=1)
-    denom = (mx - mn).replace(0, 1)  # 분모가 0이면 1로 대체
-    scaled = df.sub(mn, axis=0).div(denom, axis=0)
-    return scaled * 2 - 1
+    clipped = df.copy()
+    q_low = clipped.quantile(0.05, axis=1)
+    q_high = clipped.quantile(0.95, axis=1)
+    clipped = clipped.clip(lower=q_low, upper=q_high, axis=0)
 
-
-def calculate_composite_score(pbr_cs: pd.DataFrame, mom_cs: pd.DataFrame) -> pd.DataFrame:
-    """
-    종합 Score 계산: (PBR_CS × -1 + Mom_CS) / 2
-    
-    낮은 PBR (저평가) + 높은 모멘텀 → 높은 점수
-    
-    Parameters:
-    -----------
-    pbr_cs : pd.DataFrame
-        PBR Cross-Sectional Score
-    mom_cs : pd.DataFrame
-        Momentum Cross-Sectional Score
-    
-    Returns:
-    --------
-    pd.DataFrame
-        종합 Score
-    """
-    return (-pbr_cs + mom_cs) / 2
+    mn = clipped.min(axis=1)
+    mx = clipped.max(axis=1)
+    denom = (mx - mn).replace(0, np.nan)  # 분모 0(단면 분산 없음)은 NaN 처리 후 fillna(0)으로 [-1,1] 중간값(중립) 설정
+    scaled = clipped.sub(mn, axis=0).div(denom, axis=0)
+    return (scaled * 2 - 1).fillna(0)
