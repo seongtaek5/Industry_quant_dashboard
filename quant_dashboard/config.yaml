@@ -1,0 +1,208 @@
+# 수집 기간 (yfinance period 파라미터 형식)
+history_period: "2y"
+
+# 주가지수 (yfinance 티커)
+equities:
+  - ticker: "^GSPC"
+    name: "S&P 500"
+    region: "미국"
+  - ticker: "^NDX"
+    name: "NASDAQ 100"
+    region: "미국"
+  - ticker: "^DJI"
+    name: "다우존스"
+    region: "미국"
+  - ticker: "^KS11"
+    name: "KOSPI"
+    region: "한국"
+  - ticker: "^KQ11"
+    name: "KOSDAQ"
+    region: "한국"
+  - ticker: "^N225"
+    name: "니케이 225"
+    region: "일본"
+  - ticker: "000001.SS"
+    name: "상해종합"
+    region: "중국"
+  - ticker: "^HSI"
+    name: "항셍"
+    region: "홍콩"
+  - ticker: "^STOXX50E"
+    name: "유로스톡스 50"
+    region: "유럽"
+  - ticker: "^FTSE"
+    name: "FTSE 100"
+    region: "영국"
+  - ticker: "^GDAXI"
+    name: "DAX"
+    region: "독일"
+  - ticker: "^VIX"
+    name: "VIX"
+    region: "변동성"
+  - ticker: "^BSESN"
+    name: "인도 SENSEX"
+    region: "신흥국"
+  - ticker: "^BVSP"
+    name: "브라질 BOVESPA"
+    region: "신흥국"
+  - ticker: "VNM"
+    name: "베트남 (VNM ETF)"
+    region: "신흥국"
+
+# 금리 (국가별 수집 소스와 만기 메타데이터)
+rates:
+  parquet_name: "rates.parquet"
+  start_date: "2020-01-01"
+  us:
+    source: "fred"
+    series:
+      - id: "DGS1MO"
+        name: "미국 1M"
+        maturity_yr: 0.083
+      - id: "DGS3MO"
+        name: "미국 3M"
+        maturity_yr: 0.25
+      - id: "DGS6MO"
+        name: "미국 6M"
+        maturity_yr: 0.5
+      - id: "DGS1"
+        name: "미국 1Y"
+        maturity_yr: 1
+      - id: "DGS2"
+        name: "미국 2Y"
+        maturity_yr: 2
+      - id: "DGS5"
+        name: "미국 5Y"
+        maturity_yr: 5
+      - id: "DGS10"
+        name: "미국 10Y"
+        maturity_yr: 10
+      - id: "DGS30"
+        name: "미국 30Y"
+        maturity_yr: 30
+  kr:
+    source: "ecos"
+    stat_code: "817Y002"
+    series:
+      - id: "010150000"
+        name: "한국 3M"
+        maturity_yr: 0.25
+      - id: "010190000"
+        name: "한국 1Y"
+        maturity_yr: 1
+      - id: "010200000"
+        name: "한국 2Y"
+        maturity_yr: 2
+      - id: "010210000"
+        name: "한국 3Y"
+        maturity_yr: 3
+      - id: "010220000"
+        name: "한국 5Y"
+        maturity_yr: 5
+      - id: "010230000"
+        name: "한국 10Y"
+        maturity_yr: 10
+      - id: "010240000"
+        name: "한국 20Y"
+        maturity_yr: 20
+      - id: "010260000"
+        name: "한국 50Y"
+        maturity_yr: 50
+  jp:
+    source: "mof"
+    current_url: "https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/jgbcme.csv"
+    history_url: "https://www.mof.go.jp/english/policy/jgbs/reference/interest_rate/historical/jgbcme_all.csv"
+    series:
+      - id: "1Y"
+        name: "일본 1Y"
+        maturity_yr: 1
+      - id: "2Y"
+        name: "일본 2Y"
+        maturity_yr: 2
+      - id: "5Y"
+        name: "일본 5Y"
+        maturity_yr: 5
+      - id: "10Y"
+        name: "일본 10Y"
+        maturity_yr: 10
+      - id: "20Y"
+        name: "일본 20Y"
+        maturity_yr: 20
+      - id: "30Y"
+        name: "일본 30Y"
+        maturity_yr: 30
+      - id: "40Y"
+        name: "일본 40Y"
+        maturity_yr: 40
+
+# 원자재 (yfinance 티커)
+commodities:
+  - ticker: "CL=F"
+    name: "WTI 원유"
+    unit: "USD/bbl"
+  - ticker: "BZ=F"
+    name: "브렌트 원유"
+    unit: "USD/bbl"
+  - ticker: "GC=F"
+    name: "금"
+    unit: "USD/oz"
+  - ticker: "SI=F"
+    name: "은"
+    unit: "USD/oz"
+  - ticker: "HG=F"
+    name: "구리"
+    unit: "USD/lb"
+  - ticker: "PL=F"
+    name: "백금"
+    unit: "USD/oz"
+  - ticker: "PA=F"
+    name: "팔라듐"
+    unit: "USD/oz"
+  - ticker: "NG=F"
+    name: "천연가스"
+    unit: "USD/MMBtu"
+  - ticker: "ZW=F"
+    name: "밀"
+    unit: "USD/bu"
+  - ticker: "ZR=F"
+    name: "쌀"
+    unit: "USD/cwt"
+  - ticker: "ZC=F"
+    name: "옥수수"
+    unit: "USD/bu"
+
+# 환율 (yfinance 티커)
+fx:
+  - ticker: "DX-Y.NYB"
+    name: "DXY (달러인덱스)"
+  - ticker: "KRW=X"
+    name: "USD/KRW"
+  - ticker: "JPY=X"
+    name: "USD/JPY"
+  - ticker: "EURUSD=X"
+    name: "EUR/USD"
+  - ticker: "CNY=X"
+    name: "USD/CNY"
+  - ticker: "GBPUSD=X"
+    name: "GBP/USD"
+
+# 크립토 (CoinGecko coin id)
+crypto:
+  - id: "bitcoin"
+    name: "BTC"
+    symbol: "BTC"
+  - id: "ethereum"
+    name: "ETH"
+    symbol: "ETH"
+  - id: "solana"
+    name: "SOL"
+    symbol: "SOL"
+
+# 스케줄러 설정 (APScheduler cron 표현식, KST 기준)
+scheduler:
+  day_of_week: "mon"
+  hour: 7
+  minute: 0
+
+# FRED API 키 (환경변수로도 설정 가능: FRED_API_KEY)
+fred_api_key: "YOUR_FRED_API_KEY_HERE"
