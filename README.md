@@ -31,7 +31,7 @@ cp .env.example .env
 
 python scheduler.py --run-now
 
-채권 데이터는 quant_dashboard/data/rates.parquet 에 장기 포맷으로 저장됩니다.
+채권 데이터는 data/rates.parquet 에 장기 포맷으로 저장됩니다.
 국가별 만기 구성이 달라도 대시보드에서 각 국가의 실제 만기축으로 금리커브를 그립니다.
 
 ## 대시보드 실행
